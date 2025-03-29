@@ -14,7 +14,7 @@ app = FastAPI()
 app.mount("/ws", app=socket_app)
 
 # Initialize WebDriver with options
-cService = webdriver.ChromeService(executable_path = '/usr/bin/chromedriver')
+cService = webdriver.ChromeService(executable_path = 'D:/chromedriver-win64/chromedriver.exe')
 driver = webdriver.Chrome(service = cService)
 
 # Login to WhatsApp web

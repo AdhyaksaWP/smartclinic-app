@@ -9,7 +9,7 @@ interface RequestBody {
 export async function POST(req: Request){
     const body: RequestBody = await req.json();
 
-    if (!body.name || body.email) {
+    if (!body.name || !body.email) {
         return NextResponse.json({
             success: false,
             error: "Missing json content"

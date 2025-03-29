@@ -6,6 +6,7 @@ interface Message {
 }
 
 const ChatbotDialog = ({ messages, className }: Message) => {
+  console.log("LOGGED: ", messages);
   return (
     <div className={`${className}`}>
       <div className="flex flex-col space-y-2 w-full p-8">

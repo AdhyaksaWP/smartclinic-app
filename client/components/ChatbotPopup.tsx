@@ -44,7 +44,7 @@ const ChatbotPopup = ({ chatbotPopup, setChatbotPopup }) => {
             socket.emit("Sensor_Message", data);        
             setIsSensorDataSent(true);
     
-            setMessages((prev) => [...prev, data])
+            setMessages((prev) => [...prev, JSON.stringify(data)])
         } catch {
             console.log("An error has happened on client side");
         } finally {

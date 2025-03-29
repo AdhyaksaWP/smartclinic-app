@@ -11,7 +11,7 @@ export async function POST(req: Request){
   const body: RequestBody = await req.json();
 
 
-  if (!body.name || body.email || body.data) {
+  if (!body.name || !body.email || !body.data) {
     return NextResponse.json({
         success: false,
         error: "Missing json content"

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, ChangeEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -11,24 +11,28 @@ const LoginForm = () => {
 
     const router = useRouter();
 
-    const handleSubmit = async (e: ChangeEvent<HTMLInputElement>) => {
-        e.preventDefault();
-        
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault(); // This prevents page refresh
+        console.log("Submitting form..."); // Debugging log
+    
         try {
             const result = await signIn("credentials", {
-                redirect: false,
+                redirect: false,  // Avoid automatic redirect
                 email,
-                password
+                password,
             });
-
-            console.log("Result after trying to login: ", result);
-            if (result.error) {
+    
+            console.log("Result after login attempt:", result); // Debugging log
+    
+            if (result?.error) {
                 setError(result.error);
+                console.error("Login error:", result.error);
             } else {
-                router.replace('dashboard');
+                console.log("Login successful! Redirecting...");
+                router.push('/dashboard'); // Use push instead of replace
             }
         } catch (error) {
-            console.log("Error during login", error);
+            console.error("Error during login:", error);
         }
     };
 
@@ -46,7 +50,7 @@ const LoginForm = () => {
             {/* Sign In and Sign Up section */}
             <section className='w-full flex flex-col items-center justify-center'>
                 <div className='w-2/3 h-52 bg-light-sky-blue rounded-xl flex flex-col items-center justify-center'>
-                    <form onSubmit={() => handleSubmit} className='w-full h-full flex flex-col flex-1 items-center justify-center'>
+                    <form onSubmit={handleSubmit} className='w-full h-full flex flex-col flex-1 items-center justify-center'>
                         <input 
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} 
                             type='email' 
