@@ -1,26 +1,169 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { signOut } from 'next-auth/react';
 import { useSession } from 'next-auth/react';
 import ChatbotIcon from '@/public/icons/ChatbotIcon';
 import InstructionPopup from './InstructionPopup';
 import ChatbotPopup from './ChatbotPopup';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    Title,
+    Tooltip,
+    Legend,
+    LineController,
+    LineElement,
+    PointElement
+} from 'chart.js';
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    Title,
+    Tooltip,
+    Legend,
+    LineController,
+    LineElement,
+    PointElement
+);
 
 const Dashboard = () => {
     const [sensorReadings, setSensorReadings] = useState<number[]>([]);
     const [instructionPopup, setInstructionPopup] = useState<boolean>(false);
     const [chatbotPopup, setChatbotPopup] = useState<boolean>(false);
-    const { data: session } = useSession(); 
-    // useEffect(() => {
-    //     console.log('Session:', session);
-    // }, [session]);
+
+    const { data: session } = useSession();
+
+    const chartRef = useRef<HTMLCanvasElement>(null);
+    let chartInstance = useRef<ChartJS>(null);
+
+    const sensorVariables: string[] = [
+        "Height",
+        "Weight",
+        "BMI",
+        "Heartbeat",
+        "Temperature",
+        "Blood Pressure",
+        "Oxygen",
+    ] as const;
+
+    useEffect(() => {
+        let initChart = async () => {
+            if (!session) {
+                console.error("No available session");
+                return;
+            }
+
+            // Fetch some datas from the Database
+            const res = await fetch("/api/chart/fetch", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name: session.user.name,
+                    email: session.user.email
+                })
+            })
+
+            if (!res.ok){
+                throw new Error("An error has happened whilst fetching data")
+            }            
+            const json = await res.json()
+            const sensorData = json.message;
+
+            // Check for previous charts
+            if (!chartRef.current) return;
+            const ctx = chartRef.current.getContext('2d');
+
+            // Destroy the previous chart if it exists
+            if (chartInstance.current) {
+                chartInstance.current.destroy();
+            }
+
+            console.log("Data: ", sensorData);
+            sensorData.map((element) => {
+                console.log(element.bloodPressure);
+            })
+            /*
+                The code below will assign sensor readings from 
+                the fetched sensor data with the order as below:
+                1. BMI
+                2. Heartbeat
+                3. Temperature
+                4. Blood Pressure
+                5. Oxygen
+            */
+            const chart_data = [
+                { measurement: sensorVariables[2], readings: sensorData.map((element) => {
+                    return element.bmi;
+                })},
+                { measurement: sensorVariables[3], readings: sensorData.map((element) => {
+                    return element.heartbeat;
+                })},
+                { measurement: sensorVariables[4], readings: sensorData.map((element) => {
+                    return element.temperature;
+                })},
+                { measurement: sensorVariables[5], readings: sensorData.map((element) => {
+                    return element.bloodPressure;
+                })},
+                { measurement: sensorVariables[6], readings: sensorData.map((element) => {
+                    return element.oxygenLevel;
+                })},
+            ];
+
+            const backgroundColors = [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(255, 206, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(153, 102, 255, 0.2)'
+            ];
+            
+            const borderColors = [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)'
+            ];
+
+            chartInstance.current = new ChartJS(ctx, {
+                type: 'line',
+                data: {
+                    labels: sensorData.map((element) => {
+                        return element.createdAt;
+                    }),
+                    datasets: chart_data.map((item, index) => ({
+                        label: item.measurement,
+                        data: item.readings,
+                        backgroundColor: backgroundColors[index],
+                        borderColor: borderColors[index],
+                        borderWidth: 1
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        initChart();
+    }, [session]);
+
     useEffect(() => {
         console.log("Sensor readings changed:", sensorReadings);
     }, [sensorReadings]);
 
     return (
         <>
-            <main className={`w-full h-full flex flex-row justify-center items-center gap-x-5 ${instructionPopup || chatbotPopup ? 'blur-sm' : ''}` }>
+            <main className={`w-full h-full flex flex-row justify-center items-center gap-x-5 ${instructionPopup || chatbotPopup ? 'blur-sm' : ''}`}>
                 {/* Activities Section */}
                 <section className='dashboard-section'>
 
@@ -39,9 +182,15 @@ const Dashboard = () => {
 
                         {/* User Reports section */}
                         <div className='w-full h-3/6 my-4'>
-                            <div className='bg-white rounded-3xl h-64 flex items-center justify-center'>
-                                <div className='w-9/12'>
-                                    <h2 className='font-inter text-2xl font-bold mb-4'>Recent Check-ups</h2>
+                            <div className='bg-white rounded-3xl h-full flex items-center justify-center'>
+                                <div className='w-11/12'>
+                                    <h2 className='font-inter text-2xl font-bold'>Recent Check-ups</h2>
+                                    <div className='w-full h-3/6 my-4 bg-white rounded-3xl flex items-center justify-center'>
+                                        <canvas
+                                            width={400}
+                                            height={120}
+                                            ref={chartRef} id="myChart"></canvas>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -52,7 +201,7 @@ const Dashboard = () => {
                                 Mulai Pengecekan
                             </button>
                             <button onClick={() => setChatbotPopup(true)} className=' w-full h-1/2 rounded-2xl text-white font-bold font-inter text-2xl bg-black hover:bg-gray-800 flex items-center justify-center gap-x-5 transition ease-in'>
-                                <ChatbotIcon/>
+                                <ChatbotIcon />
                                 Send to Chatbot
                             </button>
                         </div>
@@ -65,7 +214,7 @@ const Dashboard = () => {
                         <div className='small-section-inside'>
                             <div className='h1-container'>
                                 <h1 className='h1-text'>
-                                    Tinggi Badan
+                                    Height
                                 </h1>
                             </div>
                             <div className='p-container'>
@@ -90,41 +239,41 @@ const Dashboard = () => {
 
                     <div className='big-section'>
                         <div className='h1-container'>
-                                <h1 className='h1-text'>
-                                    BMI
-                                </h1>
-                            </div>
-                            <div className='p-container'>
-                                <p className={`p-text ${sensorReadings.length > 0 ? '' : 'text-gray-300'}`}>
-                                    {sensorReadings.length > 0 ? sensorReadings[6] : "No data"}
-                                </p>
+                            <h1 className='h1-text'>
+                                BMI
+                            </h1>
+                        </div>
+                        <div className='p-container'>
+                            <p className={`p-text ${sensorReadings.length > 0 ? '' : 'text-gray-300'}`}>
+                                {sensorReadings.length > 0 ? sensorReadings[6] : "No data"}
+                            </p>
                         </div>
                     </div>
 
                     <div className='big-section'>
                         <div className='h1-container'>
-                                <h1 className='h1-text'>
-                                    Detak <br/>
-                                    Jantung
-                                </h1>
-                            </div>
-                            <div className='p-container'>
-                                <p className={`p-text ${sensorReadings.length > 0 ? '' : 'text-gray-300'}`}>
-                                    {sensorReadings.length > 0 ? sensorReadings[2] : "No data"}
-                                </p>
+                            <h1 className='h1-text'>
+                                Detak <br />
+                                Jantung
+                            </h1>
+                        </div>
+                        <div className='p-container'>
+                            <p className={`p-text ${sensorReadings.length > 0 ? '' : 'text-gray-300'}`}>
+                                {sensorReadings.length > 0 ? sensorReadings[2] : "No data"}
+                            </p>
                         </div>
                     </div>
 
                     <div className='big-section'>
                         <div className='h1-container'>
-                                <h1 className='h1-text'>
-                                    Suhu
-                                </h1>
-                            </div>
-                            <div className='p-container'>
-                                <p className={`p-text ${sensorReadings.length > 0 ? '' : 'text-gray-300'}`}>
-                                    {sensorReadings.length > 0 ? sensorReadings[3] : "No data"}
-                                </p>
+                            <h1 className='h1-text'>
+                                Temperature
+                            </h1>
+                        </div>
+                        <div className='p-container'>
+                            <p className={`p-text ${sensorReadings.length > 0 ? '' : 'text-gray-300'}`}>
+                                {sensorReadings.length > 0 ? sensorReadings[3] : "No data"}
+                            </p>
                         </div>
                     </div>
 
@@ -132,7 +281,7 @@ const Dashboard = () => {
                         <div className='small-section-inside'>
                             <div className='h1-container'>
                                 <h1 className='h1-text'>
-                                    Tensi
+                                    Blood pressure
                                 </h1>
                             </div>
                             <div className='p-container'>
@@ -144,7 +293,7 @@ const Dashboard = () => {
                         <div className='small-section-inside'>
                             <div className='h1-container'>
                                 <h1 className='h1-text'>
-                                    Level Oksigen
+                                    Oxygen
                                 </h1>
                             </div>
                             <div className='p-container'>
@@ -156,8 +305,8 @@ const Dashboard = () => {
                     </div>
                 </section>
             </main>
-            {instructionPopup ? <InstructionPopup setInstructionPopup={setInstructionPopup} setSensorReadings={setSensorReadings}/> : ""}
-            {chatbotPopup ? <ChatbotPopup chatbotPopup={chatbotPopup} setChatbotPopup={setChatbotPopup}/> : ""}
+            {instructionPopup ? <InstructionPopup setInstructionPopup={setInstructionPopup} setSensorReadings={setSensorReadings} /> : ""}
+            {chatbotPopup ? <ChatbotPopup chatbotPopup={chatbotPopup} setChatbotPopup={setChatbotPopup} /> : ""}
         </>
     );
 };

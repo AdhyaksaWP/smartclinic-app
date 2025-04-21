@@ -44,6 +44,8 @@ const RegistrationForm = () => {
                 })
             })
 
+            console.log(res);
+
             if (res.ok) {
                 const form = e.target;
                 form.reset();

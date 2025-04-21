@@ -9,8 +9,9 @@ interface RequestBody {
 export async function POST(req: Request) {
     try {
         const body: RequestBody = await req.json();
+        // console.log(body);
 
-        if (!body.fullName || body.email || body.password || body.birthDate) {
+        if (!body.fullName || !body.email || !body.password || !body.birthDate) {
             return NextResponse.json({
                 success: false,
                 error: "Missing json content"
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        await prisma.user.create({
+        const register = await prisma.user.create({
             data: { 
                 fullName: fullName, 
                 email: email, 
@@ -30,6 +31,11 @@ export async function POST(req: Request) {
                 // patientNumber, receiptsId, and timeStamp will be handled later
             }
         });
+
+        if (!register){
+            console.log("User not registered!", register);
+            return NextResponse.json({ message: "An error has happened while registering" }, { status: 500 });    
+        }
 
         return NextResponse.json({ message: "User Registered" }, { status: 201 });
     } catch (error) {
