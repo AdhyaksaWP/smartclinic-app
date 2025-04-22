@@ -1,0 +1,4 @@
+fastapi==0.115.11
+selenium==4.29.0
+python-socketio==5.12.1
+pyserial===3.5

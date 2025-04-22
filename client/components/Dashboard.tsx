@@ -16,6 +16,7 @@ import {
     LineElement,
     PointElement
 } from 'chart.js';
+import { JsonObject } from '@prisma/client/runtime/library';
 
 ChartJS.register(
     CategoryScale,
@@ -83,9 +84,10 @@ const Dashboard = () => {
             }
 
             console.log("Data: ", sensorData);
-            sensorData.map((element) => {
+            sensorData.map((element: JsonObject) => {
                 console.log(element.bloodPressure);
             })
+
             /*
                 The code below will assign sensor readings from 
                 the fetched sensor data with the order as below:
@@ -96,19 +98,19 @@ const Dashboard = () => {
                 5. Oxygen
             */
             const chart_data = [
-                { measurement: sensorVariables[2], readings: sensorData.map((element) => {
+                { measurement: sensorVariables[2], readings: sensorData.map((element: JsonObject) => {
                     return element.bmi;
                 })},
-                { measurement: sensorVariables[3], readings: sensorData.map((element) => {
+                { measurement: sensorVariables[3], readings: sensorData.map((element: JsonObject) => {
                     return element.heartbeat;
                 })},
-                { measurement: sensorVariables[4], readings: sensorData.map((element) => {
+                { measurement: sensorVariables[4], readings: sensorData.map((element: JsonObject) => {
                     return element.temperature;
                 })},
-                { measurement: sensorVariables[5], readings: sensorData.map((element) => {
+                { measurement: sensorVariables[5], readings: sensorData.map((element: JsonObject) => {
                     return element.bloodPressure;
                 })},
-                { measurement: sensorVariables[6], readings: sensorData.map((element) => {
+                { measurement: sensorVariables[6], readings: sensorData.map((element: JsonObject) => {
                     return element.oxygenLevel;
                 })},
             ];
@@ -132,7 +134,7 @@ const Dashboard = () => {
             chartInstance.current = new ChartJS(ctx, {
                 type: 'line',
                 data: {
-                    labels: sensorData.map((element) => {
+                    labels: sensorData.map((element: JsonObject) => {
                         return element.createdAt;
                     }),
                     datasets: chart_data.map((item, index) => ({

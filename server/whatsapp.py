@@ -54,10 +54,19 @@ class SendToChatbot:
 
     def scrape_chat(self):
         try:
-            msg_path = '//*[@id="main"]/div[3]/div/div[2]/div[3]'
-            msg = self.wait.until(EC.presence_of_element_located((By.XPATH, msg_path)))
-            msg_to_str = str(msg.text)
-            print("Scraped message:", msg_to_str)
+            msg_path = '//*[@id="main"]/div[3]/div/div[2]/div[3]//div[@role="row"]'
+            text_path = './/div//span[@dir="ltr"]/span'  # Search deeper inside `msg`
+
+            # Get all elements matching msg_path and select the last one
+            msg_elements = self.wait.until(EC.presence_of_all_elements_located((By.XPATH, msg_path)))
+            last_msg = msg_elements[-1]  # Get the last element
+
+            # Now, find the span inside the last message
+            text_element = last_msg.find_element(By.XPATH, text_path)
+            text_to_str = text_element.text  # Extract the text
+
+            print("Scraped message:", text_to_str)
+            return text_to_str
         except Exception as e:
             print(f"Error scraping chat: {e}")
             self.driver.quit()

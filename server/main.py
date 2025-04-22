@@ -14,7 +14,7 @@ app = FastAPI()
 app.mount("/ws", app=socket_app)
 
 # Initialize WebDriver with options
-cService = webdriver.ChromeService(executable_path = 'D:/chromedriver-win64/chromedriver.exe')
+cService = webdriver.ChromeService(executable_path = '/usr/lib/chromium-browser/chromedriver')
 driver = webdriver.Chrome(service = cService)
 
 # Login to WhatsApp web
@@ -54,7 +54,8 @@ async def message(sid, data):
 async def message(sid, data):
     print("Received question data from client: ", data)
     chatbot.send_questions(data)
-    chatbot.scrape_chat()
+    response = chatbot.scrape_chat()
+    await socket.emit("Server_Message", response)
 
 @socket.on("connect")
 async def connect(sid, env):
